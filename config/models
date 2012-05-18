@@ -1,11 +1,27 @@
 User
-    ident Text
-    password Text Maybe
-    UniqueUser ident
+    firstName    Text Maybe
+    lastName     Text Maybe
+    password     Text Maybe
+    confirmed    Bool
+    primaryEmail Text
+    UniqueUser primaryEmail
 Email
-    email Text
-    user UserId Maybe
-    verkey Text Maybe
+    email  Text
+    user   UserId Maybe
+    verkey Text   Maybe
     UniqueEmail email
+BrowserIdAuth
+    email Text
+    user  UserId
+    UniqueBrowserIdAuth email
+GoogleAuth
+    email Text
+    user  UserId
+    UniqueGoogleAuth email
+Resource
+    filename     Text
+    friendlyname Text Maybe
+    contentType  Text
+    UniqueResource filename
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)

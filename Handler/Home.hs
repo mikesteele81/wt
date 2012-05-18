@@ -1,4 +1,4 @@
-{-# LANGUAGE TupleSections, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Handler.Home where
 
 import Import
@@ -12,28 +12,20 @@ import Import
 -- inclined, or create a single monolithic file.
 getHomeR :: Handler RepHtml
 getHomeR = do
-    (formWidget, formEnctype) <- generateFormPost sampleForm
-    let submission = Nothing :: Maybe (FileInfo, Text)
-        handlerName = "getHomeR" :: Text
+    mauth <- maybeAuth
+    resources <- runDB $ selectList ([] :: [Filter Resource]) []
+    needsConfirmation <- runDB $ selectList [UserConfirmed ==. False] []
+    confirmForms <- mapM generateFormPost (confirmForm <$> needsConfirmation)
+    deleteForms <- mapM generateFormPost (deleteForm <$> map (resourceFilename . entityVal) resources)
+    let deleteRows = zip resources deleteForms
+        confirmRows = zipWith (\(Entity a b) (c, d) -> (a, b, c, d))
+                      needsConfirmation confirmForms
     defaultLayout $ do
-        aDomId <- lift newIdent
-        setTitle "Welcome To Yesod!"
+        setTitle "H3CWT - Main Page"
         $(widgetFile "homepage")
 
-postHomeR :: Handler RepHtml
-postHomeR = do
-    ((result, formWidget), formEnctype) <- runFormPost sampleForm
-    let handlerName = "postHomeR" :: Text
-        submission = case result of
-            FormSuccess res -> Just res
-            _ -> Nothing
+deleteForm :: Text -> Form Text
+deleteForm name = renderDivs (areq hiddenField "" (Just name))
 
-    defaultLayout $ do
-        aDomId <- lift newIdent
-        setTitle "Welcome To Yesod!"
-        $(widgetFile "homepage")
-
-sampleForm :: Form (FileInfo, Text)
-sampleForm = renderDivs $ (,)
-    <$> fileAFormReq "Choose a file"
-    <*> areq textField "What's on the file?" Nothing
+confirmForm :: Entity User -> Form UserId
+confirmForm (Entity uid _) = renderDivs (areq hiddenField "" (Just uid))

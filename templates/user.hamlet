@@ -1,0 +1,18 @@
+<h1>
+  #{friendlyName user}
+<p>
+  email address: #
+  #{email}
+$if not $ null auths
+  <p>
+    This account is linked with the following authentication services:
+  <ul>
+    $forall auth <- auths
+      <li>
+        #{auth}
+$if not $ userConfirmed user
+  <p>This account is still waiting for confirmation.
+<div #form>
+  <form method=post action=@{UserR uid}#form enctype=#{formEnctype}>
+    ^{formWidget}
+    <input type="submit" value="Update">

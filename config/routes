@@ -1,7 +1,13 @@
-/static StaticR Static getStatic
 /auth   AuthR   Auth   getAuth
+/static StaticR Static getStatic
 
 /favicon.ico FaviconR GET
-/robots.txt RobotsR GET
+/robots.txt  RobotsR  GET
 
-/ HomeR GET POST
+/                      HomeR     GET
+/add/                  AddR      GET POST
+/download/#Text        DownloadR GET
+/delete/#Text          DeleteR       POST
+/users/                UsersR    GET
+/users/#UserId         UserR     GET POST
+/users/#UserId/confirm ConfirmR      POST

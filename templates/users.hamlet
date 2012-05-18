@@ -1,0 +1,85 @@
+$if null users
+  <p> No users found
+$else
+  <h2>User records
+  <table>
+    <tr>
+      <th>UID
+      <th>first name
+      <th>last name
+      <th>password
+      <th>confirmed
+      <th>preferred email    
+    $forall Entity uid user <- users
+      <tr>
+        <td>
+          #{toPathPiece uid}
+        <td>
+          $maybe firstName <- userFirstName user
+            #{firstName}
+        <td>
+          $maybe lastName <- userLastName user
+            #{lastName}
+        <td>
+          #{show $ userPassword user}
+        <td>
+          #{userConfirmed user}
+        <td>
+          #{userPrimaryEmail user}
+
+$if null emails
+  <p> No email records found
+$else
+  <h2>email authentication records
+  <table>
+    <tr>
+      <th>EID
+      <th>email
+      <th>user
+      <th>verkey
+    $forall Entity eid email <- emails
+      <tr>
+        <td>
+          #{show eid}
+        <td>
+          #{emailEmail email}
+        <td>
+          #{show $ emailUser email}
+        <td>
+          #{show $ emailVerkey email}
+
+$if null googleAuths
+  <p> No Google authentication records found
+$else
+  <h2>Google authentication records
+  <table>
+    <tr>
+      <th>AID
+      <th>email
+      <th>user
+    $forall Entity aid auth <- googleAuths
+      <tr>
+        <td>
+          #{toPathPiece aid}
+        <td>
+          #{googleAuthEmail auth}
+        <td>
+          #{toPathPiece $ googleAuthUser auth}
+
+$if null browserIdAuths
+  <p> No BrowserID authentication records found
+$else
+  <h2>BrowserID authentication records
+  <table>
+    <tr>
+      <th>AID
+      <th>email
+      <th>user
+    $forall Entity aid auth <- browserIdAuths
+      <tr>
+        <td>
+          #{toPathPiece aid}
+        <td>
+          #{browserIdAuthEmail auth}
+        <td>
+          #{toPathPiece $ browserIdAuthUser auth}

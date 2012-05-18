@@ -1,3 +1,8 @@
-$maybe msg <- mmsg
+$maybe Entity uid user <- mauth
+  $maybe msg <- mmsg
     <div #message>#{msg}
+  <a href=@{HomeR}>Home #
+  <a href=@{UserR uid}>
+    #{friendlyName user} #
+  <a href=@{AuthR LogoutR}>logout
 ^{widget}

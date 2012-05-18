@@ -1,25 +1,33 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module Application
     ( makeApplication
     , getApplicationDev
     , makeFoundation
     ) where
 
-import Import
-import Settings
+import Database.Persist.GenericSql (runMigration)
+import qualified Database.Persist.Store
+import Network.HTTP.Conduit (newManager, def)
+import Network.Wai.Middleware.RequestLogger (logCallback, logCallbackDev)
 import Yesod.Auth
 import Yesod.Default.Config
 import Yesod.Default.Main
 import Yesod.Default.Handlers
 import Yesod.Logger (Logger, logBS, toProduction)
-import Network.Wai.Middleware.RequestLogger (logCallback, logCallbackDev)
-import qualified Database.Persist.Store
-import Database.Persist.GenericSql (runMigration)
-import Network.HTTP.Conduit (newManager, def)
+
+import Import
+import Settings
 
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
+import Handler.Add
+import Handler.Confirm
+import Handler.Delete
+import Handler.Download
 import Handler.Home
+import Handler.User
+import Handler.Users
 
 -- This line actually creates our YesodSite instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see

@@ -18,6 +18,12 @@ GoogleAuth
     email Text
     user  UserId
     UniqueGoogleAuth email
+FacebookAuth
+    fbId Text
+    email Text
+    user UserId
+    UniqueFacebookAuth fbId
+    UniqueFacebookAuthEmail email
 Resource
     filename     Text
     friendlyname Text Maybe

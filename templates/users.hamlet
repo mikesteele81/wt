@@ -83,3 +83,21 @@ $else
           #{browserIdAuthEmail auth}
         <td>
           #{toPathPiece $ browserIdAuthUser auth}
+
+$if null facebookAuths
+  <p> No Facebook authentication records found
+$else
+  <h2>Facebook authentication records
+  <table>
+    <tr>
+      <th>AID
+      <th>email
+      <th>user
+    $forall Entity aid auth <- facebookAuths
+      <tr>
+        <td>
+          #{toPathPiece aid}
+        <td>
+          #{facebookAuthEmail auth}
+        <td>
+          #{toPathPiece $ facebookAuthUser auth}

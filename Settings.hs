@@ -10,6 +10,7 @@ module Settings
     , staticDir
     , Extra (..)
     , parseExtra
+    , fbCredentials
     ) where
 
 import Prelude
@@ -22,6 +23,8 @@ import Data.Text (Text)
 import Data.Yaml
 import Control.Applicative
 import Settings.Development
+
+import Facebook
 
 -- | Which Persistent backend this site is using.
 type PersistConfig = SqliteConf
@@ -66,3 +69,9 @@ parseExtra :: DefaultEnv -> Object -> Parser Extra
 parseExtra _ o = Extra
     <$> o .:  "copyright"
     <*> o .:? "analytics"
+
+fbCredentials :: Credentials
+fbCredentials = Credentials
+    undefined
+    undefined
+    undefined

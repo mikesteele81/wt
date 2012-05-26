@@ -12,21 +12,25 @@ module Foundation
     , module Model
     ) where
 
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Char8 as S8
 import Prelude
 
+import qualified Data.Text.Encoding as T
 import Data.Text (Text)
 import qualified Data.Text.Encoding as TE
 import qualified Data.Text.Encoding.Error as TEE
 import Database.Persist.GenericSql
 import qualified Database.Persist.Store
-import Network.HTTP.Conduit (Manager)
+import qualified Facebook as FB
+import Network.HTTP.Conduit (Manager, withManager)
 import Text.Hamlet (hamletFile)
 import Text.Jasmine (minifym)
 import Web.ClientSession (getKey)
 import Yesod
 import Yesod.Auth
 import Yesod.Auth.BrowserId
+import Yesod.Auth.Facebook
 import Yesod.Default.Config
 import Yesod.Default.Util (addStaticContentExternal)
 import Yesod.Logger (Logger, logMsg, formatLogText)
@@ -164,20 +168,27 @@ instance YesodAuth App where
     logoutDest _ = HomeR
 
     getAuthId (Creds plugin ident extra)
-      | plugin == apName (authGoogleEmail :: AuthPlugin App) = runDB $ do
+      | plugin == apName appGoogleEmailPlugin = runDB $ do
         mauth <- getBy $ UniqueGoogleAuth ident
         case mauth of
+          -- This person has authenticated using Google before.
           Just (Entity _ auth) -> do
             muser <- getBy $ UniqueUser (googleAuthEmail auth)
             case muser of
+              -- This GoogleAuth record is associated with a valid User record.
               Just (Entity uid _) -> return $ Just uid
               Nothing -> error "GoogleAuth record exists without a corresponding User record."
+          -- Nobody has authenticated using Google and this email address.
           Nothing -> do
             muser <- getBy $ UniqueUser ident
             case muser of
+              -- We already have a user account set up for this email address.
+              -- Link them.
               Just (Entity uid _) -> do
                 _ <- insert $ GoogleAuth ident uid
                 return $ Just uid
+              -- We've never seen this email address before. Create a new user
+              -- account.
               Nothing -> do
                 numUsers <- count ([] :: [Filter User])
                 -- The first user needs to be confirmed.
@@ -186,7 +197,7 @@ instance YesodAuth App where
                     (lookup "lastname" extra) Nothing confirmed ident
                 _ <- insert $ GoogleAuth ident uid
                 return $ Just uid
-      | plugin == apName (authBrowserId :: AuthPlugin App) = runDB $ do
+      | plugin == apName appBrowserIdPlugin = runDB $ do
         mauth <- getBy $ UniqueBrowserIdAuth ident
         case mauth of
           Just (Entity _ auth) -> do
@@ -207,10 +218,52 @@ instance YesodAuth App where
                 uid <- insert $ User Nothing Nothing Nothing confirmed ident
                 _ <- insert $ BrowserIdAuth ident uid
                 return $ Just uid
+      | plugin == apName appFacebookPlugin = do
+        mauth <- runDB . getBy $ UniqueFacebookAuth ident
+        case mauth of
+          -- This person has authenticated using Facebook before.
+          Just (Entity _ auth) -> do
+            muser <- runDB . getBy $ UniqueUser (facebookAuthEmail auth)
+            case muser of
+              -- This FacebookAuth record is associated with a valid User
+              -- record.
+              Just (Entity uid _) -> return $ Just uid
+              Nothing -> error "FacebookAuth record exists without a corresponding User record."
+          -- Nobody has authenticated using Facebook and this email address.
+          Nothing -> do
+            mtoken <- getUserAccessToken
+            (mfirstName, mlastName, memail) <- withManager $ \mgr ->
+                FB.runFacebookT Settings.fbCredentials mgr $ do
+                    fbUser <- FB.getUser "me" [] mtoken --(T.encodeUtf8 ident) [] mtoken
+                    --email <- FB.getObject (BS.concat ["/", T.encodeUtf8 ident, "email"]) [] mtoken
+                    return ( FB.userFirstName fbUser, FB.userLastName fbUser
+                           , FB.userEmail fbUser)
+            case memail of
+              Nothing -> error "unable to retreive email address from Facebook."
+              Just email -> runDB $ do
+                muser <- getBy $ UniqueUser email
+                case muser of
+                  -- We already have a user account set up for this email
+                  -- address. Link them.
+                  Just (Entity uid _) -> do
+                    _ <- insert $ FacebookAuth ident email uid
+                    return $ Just uid
+                  -- We've never seen this email address before. Create a new
+                  -- user account.
+                  Nothing -> do
+                    numUsers <- count ([] :: [Filter User])
+                    -- The first user needs to be confirmed.
+                    let confirmed = if numUsers == 0 then True else False
+                    uid <- insert $ User mfirstName mlastName
+                                         Nothing confirmed email
+                    _ <- insert $ FacebookAuth ident email uid
+                    return $ Just uid
       | otherwise = invalidArgs [plugin, ident]
 
     -- You can add other plugins like BrowserID, email or OAuth here
-    authPlugins _ = [authBrowserId, authGoogleEmail]
+    authPlugins _ = [ appFacebookPlugin
+                    , appBrowserIdPlugin
+                    , appGoogleEmailPlugin]
 
     authHttpManager = httpManager
 
@@ -270,3 +323,12 @@ applyLayout' :: Yesod master
 applyLayout' title body = fmap chooseRep $ defaultLayout $ do
     setTitle title
     toWidget body
+
+appFacebookPlugin :: AuthPlugin App
+appFacebookPlugin = authFacebook Settings.fbCredentials ["email"]
+
+appGoogleEmailPlugin :: AuthPlugin App
+appGoogleEmailPlugin = authGoogleEmail
+
+appBrowserIdPlugin :: AuthPlugin App
+appBrowserIdPlugin = authBrowserId

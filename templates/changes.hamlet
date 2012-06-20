@@ -1,0 +1,17 @@
+<h3>June 20, 2012
+<ul>
+  <li>
+    Improvement: Customize login screen. Hopefully visitors will better #
+    understand what's going on
+  <li>
+    Bug fix: Prevent people from modifying each other's profile pages.
+  <li>
+    Bug fix: mobile devices were failing to correctly download files.
+<h3>May 26, 2012
+<ul>
+  <li>
+    Addition: link to this list on every page.
+  <li>
+    Addition: basic Facebook authentication.
+  <li>
+    Bug Fix: updated page titles.

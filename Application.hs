@@ -22,6 +22,7 @@ import Settings
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
 import Handler.Add
+import Handler.Changes
 import Handler.Confirm
 import Handler.Delete
 import Handler.Download

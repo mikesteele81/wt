@@ -10,5 +10,5 @@ getUsersR = do
     googleAuths <- runDB $ selectList [] []
     browserIdAuths <- runDB $ selectList [] []
     defaultLayout $ do
-        setTitle "Welcome To Yesod!"
+        setTitle "H3CWT - List users"
         $(widgetFile "users")

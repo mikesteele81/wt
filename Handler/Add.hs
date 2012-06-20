@@ -14,7 +14,7 @@ getAddR :: Handler RepHtml
 getAddR = do
     (formWidget, formEnctype) <- generateFormPost uploadForm
     defaultLayout $ do
-        setTitle "Welcome To Yesod!"
+        setTitle "W3CWT - Add a resource"
         $(widgetFile "addform")
 
 postAddR :: Handler RepHtml

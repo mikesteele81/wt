@@ -8,6 +8,7 @@
 /add/                  AddR      GET POST
 /download/#Text        DownloadR GET
 /delete/#Text          DeleteR       POST
+/changes               ChangesR  GET
 /users/                UsersR    GET
 /users/#UserId         UserR     GET POST
 /users/#UserId/confirm ConfirmR      POST

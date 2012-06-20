@@ -1,0 +1,7 @@
+<h2>Log In
+<p>
+  Do you already have an account with one of these sites? Click the logo to #
+  log in with it here.
+<ul>
+  $forall widget <- loginWidgets
+    <li>^{widget}

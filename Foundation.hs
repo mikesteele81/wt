@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Foundation
     ( App (..)
     , Route (..)
@@ -12,11 +14,11 @@ module Foundation
     , module Model
     ) where
 
-import qualified Data.ByteString as BS
+import Control.Applicative ((<$>))
 import qualified Data.ByteString.Char8 as S8
 import Prelude
 
-import qualified Data.Text.Encoding as T
+import qualified Data.Conduit as C
 import Data.Text (Text)
 import qualified Data.Text.Encoding as TE
 import qualified Data.Text.Encoding.Error as TEE
@@ -26,11 +28,13 @@ import qualified Facebook as FB
 import Network.HTTP.Conduit (Manager, withManager)
 import Text.Hamlet (hamletFile)
 import Text.Jasmine (minifym)
+import Web.Authenticate.BrowserId
 import Web.ClientSession (getKey)
 import Yesod
 import Yesod.Auth
 import Yesod.Auth.BrowserId
 import Yesod.Auth.Facebook
+import qualified Yesod.Auth.Message as Msg
 import Yesod.Default.Config
 import Yesod.Default.Util (addStaticContentExternal)
 import Yesod.Logger (Logger, logMsg, formatLogText)
@@ -114,16 +118,9 @@ instance Yesod App where
 
     errorHandler = wtErrorHandler
 
-    isAuthorized (AuthR _)   _ = return Authorized
-    isAuthorized RobotsR     _ = return Authorized
-    isAuthorized FaviconR    _ = return Authorized
-    isAuthorized (StaticR _) _ = return Authorized
-    isAuthorized _           _ = do
+    isAuthorized route isWrite = do
         mauth <- maybeAuth
-        return $ case mauth of
-          Nothing -> AuthenticationRequired
-          Just (Entity _ user) -> if userConfirmed user then Authorized
-                                  else Unauthorized "Sorry, but I'm waiting for an existing member to confirm your access. Once this has been done you will be able to use the service. Please try again later."
+        runDB $ mauth `isAuthorizedTo` permissionsRequiredFor route isWrite
 
     maximumContentLength _ _ = 50 * 1024 * 1024 -- 50 MiB
 
@@ -191,10 +188,9 @@ instance YesodAuth App where
               -- account.
               Nothing -> do
                 numUsers <- count ([] :: [Filter User])
-                -- The first user needs to be confirmed.
-                let confirmed = if numUsers == 0 then True else False
                 uid <- insert $ User (lookup "firstname" extra)
-                    (lookup "lastname" extra) Nothing confirmed ident
+                    -- The first user needs to be confirmed.
+                    (lookup "lastname" extra) Nothing (numUsers == 0) ident
                 _ <- insert $ GoogleAuth ident uid
                 return $ Just uid
       | plugin == apName appBrowserIdPlugin = runDB $ do
@@ -214,8 +210,7 @@ instance YesodAuth App where
               Nothing -> do
                 numUsers <- count ([] :: [Filter User])
                 -- The first user needs to be confirmed.
-                let confirmed = if numUsers == 0 then True else False
-                uid <- insert $ User Nothing Nothing Nothing confirmed ident
+                uid <- insert $ User Nothing Nothing Nothing (numUsers == 0) ident
                 _ <- insert $ BrowserIdAuth ident uid
                 return $ Just uid
       | plugin == apName appFacebookPlugin = do
@@ -234,8 +229,7 @@ instance YesodAuth App where
             mtoken <- getUserAccessToken
             (mfirstName, mlastName, memail) <- withManager $ \mgr ->
                 FB.runFacebookT Settings.fbCredentials mgr $ do
-                    fbUser <- FB.getUser "me" [] mtoken --(T.encodeUtf8 ident) [] mtoken
-                    --email <- FB.getObject (BS.concat ["/", T.encodeUtf8 ident, "email"]) [] mtoken
+                    fbUser <- FB.getUser "me" [] mtoken
                     return ( FB.userFirstName fbUser, FB.userLastName fbUser
                            , FB.userEmail fbUser)
             case memail of
@@ -252,18 +246,24 @@ instance YesodAuth App where
                   -- user account.
                   Nothing -> do
                     numUsers <- count ([] :: [Filter User])
-                    -- The first user needs to be confirmed.
-                    let confirmed = if numUsers == 0 then True else False
                     uid <- insert $ User mfirstName mlastName
-                                         Nothing confirmed email
+                                         -- The first user needs to be confirmed.
+                                         Nothing (numUsers == 0) email
                     _ <- insert $ FacebookAuth ident email uid
                     return $ Just uid
       | otherwise = invalidArgs [plugin, ident]
 
     -- You can add other plugins like BrowserID, email or OAuth here
     authPlugins _ = [ appFacebookPlugin
-                    , appBrowserIdPlugin
-                    , appGoogleEmailPlugin]
+                    , appGoogleEmailPlugin
+                    , appBrowserIdPlugin]
+
+    loginHandler = defaultLayout $ do
+        setTitle "H3CWT - Login"
+        tm <- lift getRouteToMaster
+        master <- lift getYesod
+        let loginWidgets = map (flip apLogin tm) (authPlugins master)
+        $(widgetFile "login")
 
     authHttpManager = httpManager
 
@@ -324,11 +324,85 @@ applyLayout' title body = fmap chooseRep $ defaultLayout $ do
     setTitle title
     toWidget body
 
+-- Taken from yesod-auth-fb, and modified so my own logo is displayed.
 appFacebookPlugin :: AuthPlugin App
-appFacebookPlugin = authFacebook Settings.fbCredentials ["email"]
+appFacebookPlugin = (authFacebook Settings.fbCredentials ["email"])
+    { apLogin = \tm -> do
+          redirectUrl <- lift (getRedirectUrl tm)
+          [whamlet|
+<a href="#{redirectUrl}">
+  <img src=@{StaticR img_facebook_logo_png} alt=_{Msg.Facebook}>
+|]
+    }
+  where
+    -- Run a Facebook action.
+    runFB :: YesodAuth master =>
+             FB.FacebookT FB.Auth (C.ResourceT IO) a
+          -> GHandler sub master a
+    runFB act = do
+      manager <- authHttpManager <$> getYesod
+      liftIO $ C.runResourceT $ FB.runFacebookT Settings.fbCredentials manager act
 
+    getRedirectUrl :: YesodAuth master =>
+                      (Route Auth -> Route master)
+                   -> GHandler sub master Text
+    getRedirectUrl tm = do
+        render  <- getUrlRender
+        let proceedUrl = render (tm proceedR)
+        runFB $ FB.getUserAccessTokenStep1 proceedUrl ["email"]
+    proceedR = PluginR "fb" ["proceed"]
+
+-- Taken from yesod-auth, and modified so that my own logo is displayed.
 appGoogleEmailPlugin :: AuthPlugin App
 appGoogleEmailPlugin = authGoogleEmail
+    { apLogin = \tm -> do
+        [whamlet|
+<a href=@{tm forwardUrl}>
+  <img src=@{StaticR img_google_logo_png} alt=_{Msg.LoginGoogle}>
+|]
+    }
 
+-- Taken from yesod-auth, and modified so that my own logo is displayed.
 appBrowserIdPlugin :: AuthPlugin App
 appBrowserIdPlugin = authBrowserId
+    { apLogin = \toMaster -> do
+        addScriptRemote browserIdJs
+        toWidget [hamlet|
+<a href="javascript:navigator.id.getVerifiedEmail(function(a){if(a)document.location='@{toMaster complete}/'+a});">
+  <img src=@{StaticR img_browserid_logo_png} alt="BrowserId">
+|]
+    }
+  where
+    complete = PluginR "browserid" []
+
+data Permission = EditProfile UserId
+                | Other
+
+permissionsRequiredFor :: Route App -> Bool -> [Permission]
+permissionsRequiredFor (UserR uid) True = [EditProfile uid]
+permissionsRequiredFor (AuthR _)   _    = []
+permissionsRequiredFor RobotsR     _    = []
+permissionsRequiredFor FaviconR    _    = []
+permissionsRequiredFor (StaticR _) _    = []
+permissionsRequiredFor ChangesR    _    = []
+permissionsRequiredFor _           _    = [Other]
+
+hasPermissionTo :: Entity User -> Permission -> YesodDB sub App AuthResult
+hasPermissionTo (Entity uid  _) (EditProfile uid') = return $
+    if uid == uid'
+    then Authorized
+    else Unauthorized "Sorry, but I cannot let you modify someone else's profile."
+hasPermissionTo (Entity _ user) Other = return $
+    if userConfirmed user
+    then Authorized
+    else Unauthorized "Sorry, but I'm waiting for an existing member to confirm your access. Once this has been done you will be able to use the service. Please try again later."
+
+isAuthorizedTo :: Maybe (Entity User) -> [Permission]
+    -> YesodDB sub App AuthResult
+isAuthorizedTo _        []     = return Authorized
+isAuthorizedTo Nothing  _      = return AuthenticationRequired
+isAuthorizedTo (Just u) (p:ps) = do
+    r <- hasPermissionTo u p
+    case r of
+      Authorized -> Just u `isAuthorizedTo` ps
+      _          -> return r -- unauthorized

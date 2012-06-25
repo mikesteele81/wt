@@ -190,7 +190,7 @@ instance YesodAuth App where
                 numUsers <- count ([] :: [Filter User])
                 uid <- insert $ User (lookup "firstname" extra)
                     -- The first user needs to be confirmed.
-                    (lookup "lastname" extra) Nothing (numUsers == 0) ident
+                    (lookup "lastname" extra) (numUsers == 0) ident
                 _ <- insert $ GoogleAuth ident uid
                 return $ Just uid
       | plugin == apName appBrowserIdPlugin = runDB $ do
@@ -210,7 +210,7 @@ instance YesodAuth App where
               Nothing -> do
                 numUsers <- count ([] :: [Filter User])
                 -- The first user needs to be confirmed.
-                uid <- insert $ User Nothing Nothing Nothing (numUsers == 0) ident
+                uid <- insert $ User Nothing Nothing (numUsers == 0) ident
                 _ <- insert $ BrowserIdAuth ident uid
                 return $ Just uid
       | plugin == apName appFacebookPlugin = do
@@ -248,7 +248,7 @@ instance YesodAuth App where
                     numUsers <- count ([] :: [Filter User])
                     uid <- insert $ User mfirstName mlastName
                                          -- The first user needs to be confirmed.
-                                         Nothing (numUsers == 0) email
+                                         (numUsers == 0) email
                     _ <- insert $ FacebookAuth ident email uid
                     return $ Just uid
       | otherwise = invalidArgs [plugin, ident]
@@ -379,13 +379,14 @@ data Permission = EditProfile UserId
                 | Other
 
 permissionsRequiredFor :: Route App -> Bool -> [Permission]
-permissionsRequiredFor (UserR uid) True = [EditProfile uid]
-permissionsRequiredFor (AuthR _)   _    = []
-permissionsRequiredFor RobotsR     _    = []
-permissionsRequiredFor FaviconR    _    = []
-permissionsRequiredFor (StaticR _) _    = []
-permissionsRequiredFor ChangesR    _    = []
-permissionsRequiredFor _           _    = [Other]
+permissionsRequiredFor (UserR uid)      True = [EditProfile uid]
+permissionsRequiredFor (AuthR _)        _    = []
+permissionsRequiredFor ChangesR         _    = []
+permissionsRequiredFor FaviconR         _    = []
+permissionsRequiredFor RobotsR          _    = []
+permissionsRequiredFor (StaticR _)      _    = []
+permissionsRequiredFor (TemporaryR _ _) _    = []
+permissionsRequiredFor _                _    = [Other]
 
 hasPermissionTo :: Entity User -> Permission -> YesodDB sub App AuthResult
 hasPermissionTo (Entity uid  _) (EditProfile uid') = return $

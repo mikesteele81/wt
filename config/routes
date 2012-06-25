@@ -4,11 +4,12 @@
 /favicon.ico FaviconR GET
 /robots.txt  RobotsR  GET
 
-/                      HomeR     GET
-/add/                  AddR      GET POST
-/download/#Text        DownloadR GET
-/delete/#Text          DeleteR       POST
-/changes               ChangesR  GET
-/users/                UsersR    GET
-/users/#UserId         UserR     GET POST
-/users/#UserId/confirm ConfirmR      POST
+/                      HomeR      GET
+/resources/            ResourcesR GET POST
+/resources/#Text       ResourceR  GET
+/delete/#Text          DeleteR        POST
+/changes               ChangesR   GET
+/users/                UsersR     GET POST
+/users/#UserId         UserR      GET POST
+/users/#UserId/confirm ConfirmR       POST
+/temporary/#Text/#Text TemporaryR GET

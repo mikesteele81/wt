@@ -3,6 +3,7 @@ module Model where
 import qualified Data.ByteString as BS
 import Data.Text (Text)
 import Data.Text as T
+import Data.Time
 import Prelude
 
 import Database.Persist.Quasi
@@ -17,7 +18,7 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"]
 
 -- |Don't check against DB for now.
 friendlyName :: User -> Text
-friendlyName (User (Just fn) (Just ln) _ _ _) = T.concat [fn, " ", ln]
-friendlyName (User (Just fn) _         _ _ _) = fn
-friendlyName (User _         (Just ln) _ _ _) = ln
-friendlyName (User _         _         _ _ email) = email
+friendlyName (User (Just fn) (Just ln) _ _    ) = T.concat [fn, " ", ln]
+friendlyName (User (Just fn) _         _ _    ) = fn
+friendlyName (User _         (Just ln) _ _    ) = ln
+friendlyName (User _         _         _ email) = email

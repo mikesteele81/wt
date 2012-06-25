@@ -17,15 +17,15 @@ $maybe Entity _ user <- mauth
         <tr>
           <td>
             $maybe name <- resourceFriendlyname $ entityVal $ resource
-              <a href=@{DownloadR $ resourceFilename $ entityVal $ resource}>
+              <a href=@{ResourceR $ resourceFilename $ entityVal $ resource}>
                 #{name}
             $nothing
-              <a href=@{DownloadR $ resourceFilename $ entityVal $ resource}>
+              <a href=@{ResourceR $ resourceFilename $ entityVal $ resource}>
                 #{resourceFilename $ entityVal $ resource}
           <td>
             <form method=post action=@{DeleteR $ resourceFilename $ entityVal $ resource} enctype=#{snd form}>
               ^{fst form}
               <input type="submit" value="Delete">
-  <a href=@{AddR}>Add a resource
+  <a href=@{ResourcesR}>Add a resource
 $nothing
   <a href=@{AuthR LoginR}>login

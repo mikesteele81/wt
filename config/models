@@ -1,15 +1,9 @@
 User
     firstName    Text Maybe
     lastName     Text Maybe
-    password     Text Maybe
     confirmed    Bool
     primaryEmail Text
     UniqueUser primaryEmail
-Email
-    email  Text
-    user   UserId Maybe
-    verkey Text   Maybe
-    UniqueEmail email
 BrowserIdAuth
     email Text
     user  UserId
@@ -29,5 +23,10 @@ Resource
     friendlyname Text Maybe
     contentType  Text
     UniqueResource filename
+Temporary
+    hash Text
+    expires UTCTime
+    resource ResourceId
+    UniqueTemporary hash
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)

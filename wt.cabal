@@ -29,14 +29,16 @@ library
                      Settings.StaticFiles
                      Settings.Development
                      GoogleEmail
-                     Handler.Add
                      Handler.Changes
                      Handler.Confirm
                      Handler.Delete
                      Handler.Home
-                     Handler.Download
+                     Handler.Resource
+                     Handler.Resources
+                     Handler.Temporary
                      Handler.User
                      Handler.Users
+
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
@@ -68,6 +70,7 @@ library
                  , hamlet                >= 1.0     && < 1.1
                  , hjsmin                >= 0.1     && < 0.2
                  , http-conduit          >= 1.4     && < 1.5
+                 , http-types            >= 0.6     && < 0.7
                  , lifted-base           >= 0.1     && < 0.2
                  , monad-control         >= 0.3     && < 0.4
                  , persistent            >= 0.9     && < 0.10
@@ -79,6 +82,7 @@ library
                  , system-filepath
                  , template-haskell
                  , text                  >= 0.11    && < 0.12
+                 , time                  >= 1.4     && < 1.5
                  , wai                   >= 1.2     && < 1.3
                  , wai-extra             >= 1.2     && < 1.3
                  , warp                  >= 1.2     && < 1.3

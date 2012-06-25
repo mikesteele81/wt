@@ -1,24 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Handler.Add where
+module Handler.Resources where
 
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
-import qualified Data.Text as T
 
 import Filesystem as FP
 import Filesystem.Path.CurrentOS as FP
 
 import Import
 
-getAddR :: Handler RepHtml
-getAddR = do
+getResourcesR :: Handler RepHtml
+getResourcesR = do
     (formWidget, formEnctype) <- generateFormPost uploadForm
     defaultLayout $ do
         setTitle "W3CWT - Add a resource"
-        $(widgetFile "addform")
+        $(widgetFile "addResourceForm")
 
-postAddR :: Handler RepHtml
-postAddR = do
+postResourcesR :: Handler RepHtml
+postResourcesR = do
     ((result, _), _) <- runFormPost uploadForm
     let submission = case result of
             FormSuccess res -> Just res

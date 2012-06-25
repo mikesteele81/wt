@@ -1,3 +1,13 @@
+<h3>June 26, 2012
+<ul>
+  <li>
+    Addition: Ability to manually enter users and their email addresses. #
+    This provides an easy way of authorizing people that have not yet used #
+    the service.
+  <li>
+    Improvement: Requesting to download resources redirects to a temporary #
+    URL which does not require authentication to access. This allows web #
+    browsers to pass of the request to an external application.
 <h3>June 20, 2012
 <ul>
   <li>

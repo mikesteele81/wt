@@ -21,12 +21,13 @@ import Settings
 
 -- Import all relevant handler modules here.
 -- Don't forget to add new modules to your cabal file!
-import Handler.Add
 import Handler.Changes
 import Handler.Confirm
 import Handler.Delete
-import Handler.Download
 import Handler.Home
+import Handler.Resource
+import Handler.Resources
+import Handler.Temporary
 import Handler.User
 import Handler.Users
 

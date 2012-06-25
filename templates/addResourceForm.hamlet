@@ -1,5 +1,5 @@
 <div #form>
-  <form method=post action=@{AddR}#form enctype=#{formEnctype}>
+  <form method=post action=@{ResourcesR}#form enctype=#{formEnctype}>
     ^{formWidget}
     <input type="submit" value="Upload">
 

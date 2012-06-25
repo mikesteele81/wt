@@ -7,7 +7,6 @@ $else
       <th>UID
       <th>first name
       <th>last name
-      <th>password
       <th>confirmed
       <th>preferred email    
     $forall Entity uid user <- users
@@ -21,32 +20,9 @@ $else
           $maybe lastName <- userLastName user
             #{lastName}
         <td>
-          #{show $ userPassword user}
-        <td>
           #{userConfirmed user}
         <td>
           #{userPrimaryEmail user}
-
-$if null emails
-  <p> No email records found
-$else
-  <h2>email authentication records
-  <table>
-    <tr>
-      <th>EID
-      <th>email
-      <th>user
-      <th>verkey
-    $forall Entity eid email <- emails
-      <tr>
-        <td>
-          #{show eid}
-        <td>
-          #{emailEmail email}
-        <td>
-          #{show $ emailUser email}
-        <td>
-          #{show $ emailVerkey email}
 
 $if null googleAuths
   <p> No Google authentication records found
@@ -101,3 +77,9 @@ $else
           #{facebookAuthEmail auth}
         <td>
           #{toPathPiece $ facebookAuthUser auth}
+
+<h2>Add a new user
+<div #form>
+  <form method=post action=@{UsersR}#form enctype=#{formEnctype}>
+    ^{formWidget}
+    <input type="submit" value="Add">

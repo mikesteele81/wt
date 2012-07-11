@@ -1,13 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module Handler.Resources where
 
+import Control.Applicative
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
+import Data.Text (Text)
 
 import Filesystem as FP
 import Filesystem.Path.CurrentOS as FP
 
-import Import
+import Yesod
+
+import Foundation
+import Model
+import Settings (widgetFile)
 
 getResourcesR :: Handler RepHtml
 getResourcesR = do

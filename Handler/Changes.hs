@@ -1,7 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module Handler.Changes where
 
-import Import
+import Yesod
+
+import Foundation
+import Settings (widgetFile)
 
 getChangesR :: Handler RepHtml
 getChangesR = do

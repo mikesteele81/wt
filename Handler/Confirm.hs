@@ -2,9 +2,11 @@
 module Handler.Confirm where
 
 import qualified Data.Text as T
-import Prelude
 
-import Import
+import Yesod
+
+import Foundation
+import Model
 
 postConfirmR :: UserId -> Handler RepHtml
 postConfirmR uid = do

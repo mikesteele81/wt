@@ -12,4 +12,4 @@
 /users/                UsersR     GET POST
 /users/#UserId         UserR      GET POST
 /users/#UserId/confirm ConfirmR       POST
-/temporary/#Text/#Text TemporaryR GET
+

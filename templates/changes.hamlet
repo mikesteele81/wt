@@ -1,3 +1,12 @@
+<h3>July 6, 2012
+<ul>
+  <li>
+    Addition: When adding new user accounts, a notification #
+    will be sent out to the associated email address.
+  <li>
+    Bug fix: Redirecting download links to a temporary, unsecured location #
+    was a bad idea. It was meant to get around a limitation in the default #
+    Android mobile web browser, but ended up creating other problems.
 <h3>June 26, 2012
 <ul>
   <li>

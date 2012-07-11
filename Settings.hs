@@ -1,30 +1,22 @@
--- | Settings are centralized, as much as possible, into this file. This
--- includes database connection settings, static file locations, etc.
--- In addition, you can configure a number of different aspects of Yesod
--- by overriding methods in the Yesod typeclass. That instance is
--- declared in the Foundation.hs file.
-module Settings
-    ( widgetFile
-    , PersistConfig
-    , staticRoot
-    , staticDir
-    , Extra (..)
-    , parseExtra
-    , fbCredentials
-    ) where
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
 
-import Prelude
-import Text.Shakespeare.Text (st)
-import Language.Haskell.TH.Syntax
+module Settings where
+
+import Control.Applicative
+import Data.ByteString (ByteString)
+import Data.Text (Text)
+
+import Data.Yaml
 import Database.Persist.Sqlite (SqliteConf)
+import Facebook
+import Language.Haskell.TH.Syntax
+import Text.Shakespeare.Text (st)
 import Yesod.Default.Config
 import qualified Yesod.Default.Util
-import Data.Text (Text)
-import Data.Yaml
-import Control.Applicative
-import Settings.Development
 
-import Facebook
+import Settings.Development
 
 -- | Which Persistent backend this site is using.
 type PersistConfig = SqliteConf
@@ -75,3 +67,12 @@ fbCredentials = Credentials
     undefined
     undefined
     undefined
+
+sesAccessKey :: ByteString
+sesAccessKey = undefined
+
+sesSecretKey :: ByteString
+sesSecretKey = undefined
+
+sesFromAddress :: Text
+sesFromAddress = undefined

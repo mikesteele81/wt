@@ -1,4 +1,4 @@
-$maybe Entity _ user <- mauth
+$maybe Entity _ _ <- mauth
   $if null needsConfirmation
   $else
     <p>The following users need to be confirmed:

@@ -1,6 +1,8 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module Settings.StaticFiles where
 
-import Prelude (IO)
 import Yesod.Static
 import qualified Yesod.Static as Static
 import Settings (staticDir)

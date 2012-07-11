@@ -1,10 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module Handler.User where
 
+import Control.Applicative
 import Data.Maybe
+import Data.Text (Text)
 import qualified Data.Text as T
 
-import Import
+import Yesod
+
+import Foundation
+import Model
+import Settings (widgetFile)
 
 getUserR :: UserId -> Handler RepHtml
 getUserR uid = do

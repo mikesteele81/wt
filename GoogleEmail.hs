@@ -17,7 +17,6 @@ module GoogleEmail
     , forwardUrl
     ) where
 
-import Prelude
 import Yesod.Auth
 import qualified Web.Authenticate.OpenId as OpenId
 import Yesod.Handler
@@ -80,8 +79,8 @@ completeHelper gets' = do
         eres <- lift $ try $ OpenId.authenticateClaimed gets' (authHttpManager master)
         toMaster <- getRouteToMaster
         let onFailure err = do
-            setMessage $ toHtml $ show (err :: SomeException)
-            redirect $ toMaster LoginR
+                setMessage $ toHtml $ show (err :: SomeException)
+                redirect $ toMaster LoginR
         let onSuccess oir = do
                 let OpenId.Identifier ident = OpenId.oirOpLocal oir
                 memail <- lookupGetParam "openid.ext1.value.email"

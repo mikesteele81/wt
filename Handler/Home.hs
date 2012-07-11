@@ -1,8 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Handler.Home where
 
-import Import
+import Control.Applicative
+import Data.Text (Text)
+
+import Yesod
+import Yesod.Auth (maybeAuth)
+
+import Foundation
+import Model
+import Settings (widgetFile)
 
 -- This is a handler function for the GET request method on the HomeR
 -- resource pattern. All of your resource patterns are defined in

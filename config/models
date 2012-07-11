@@ -23,10 +23,5 @@ Resource
     friendlyname Text Maybe
     contentType  Text
     UniqueResource filename
-Temporary
-    hash Text
-    expires UTCTime
-    resource ResourceId
-    UniqueTemporary hash
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)

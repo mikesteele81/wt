@@ -1,10 +1,12 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
+
 module Model where
 
-import qualified Data.ByteString as BS
-import Data.Text (Text)
 import Data.Text as T
-import Data.Time
-import Prelude
 
 import Database.Persist.Quasi
 import Yesod

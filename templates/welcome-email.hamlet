@@ -1,0 +1,12 @@
+$doctype 5
+<html>
+  <head>
+  <body>
+    <p>
+      Greetings, #{friendlyName user}, from the HCCC's WT web service,
+    <p>
+      We're making it easier to distribute music and other files you may want access to. There are plenty of file sharing systems out there, but we prefer not to rely on any 3rd party cloud service to distribute copyrighted works.
+    <p>
+      It was #{friendlyName addingUser} who activated your account. Visit #
+      <a href=@{HomeR}>@{HomeR}
+      \ to see what is available. We will send you notifications when new content is added.

@@ -1,4 +1,8 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Foundation
     ( App (..)
@@ -8,15 +12,10 @@ module Foundation
     , Handler
     , Widget
     , Form
-    , maybeAuth
-    , requireAuth
-    , module Settings
-    , module Model
     ) where
 
 import Control.Applicative ((<$>))
 import qualified Data.ByteString.Char8 as S8
-import Prelude
 
 import qualified Data.Conduit as C
 import Data.Text (Text)
@@ -33,7 +32,7 @@ import Web.ClientSession (getKey)
 import Yesod
 import Yesod.Auth
 import Yesod.Auth.BrowserId
-import Yesod.Auth.Facebook
+import Yesod.Auth.Facebook.ServerSide
 import qualified Yesod.Auth.Message as Msg
 import Yesod.Default.Config
 import Yesod.Default.Util (addStaticContentExternal)
@@ -385,7 +384,6 @@ permissionsRequiredFor ChangesR         _    = []
 permissionsRequiredFor FaviconR         _    = []
 permissionsRequiredFor RobotsR          _    = []
 permissionsRequiredFor (StaticR _)      _    = []
-permissionsRequiredFor (TemporaryR _ _) _    = []
 permissionsRequiredFor _                _    = [Other]
 
 hasPermissionTo :: Entity User -> Permission -> YesodDB sub App AuthResult

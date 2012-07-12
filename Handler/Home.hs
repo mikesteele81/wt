@@ -4,7 +4,6 @@
 module Handler.Home where
 
 import Control.Applicative
-import Data.Text (Text)
 
 import Yesod
 import Yesod.Auth (maybeAuth)
@@ -26,16 +25,11 @@ getHomeR = do
     resources <- runDB $ selectList ([] :: [Filter Resource]) []
     needsConfirmation <- runDB $ selectList [UserConfirmed ==. False] []
     confirmForms <- mapM generateFormPost (confirmForm <$> needsConfirmation)
-    deleteForms <- mapM generateFormPost (deleteForm <$> map (resourceFilename . entityVal) resources)
-    let deleteRows = zip resources deleteForms
-        confirmRows = zipWith (\(Entity a b) (c, d) -> (a, b, c, d))
+    let confirmRows = zipWith (\(Entity a b) (c, d) -> (a, b, c, d))
                       needsConfirmation confirmForms
     defaultLayout $ do
         setTitle "H3CWT - Main Page"
         $(widgetFile "homepage")
-
-deleteForm :: Text -> Form Text
-deleteForm name = renderDivs (areq hiddenField "" (Just name))
 
 confirmForm :: Entity User -> Form UserId
 confirmForm (Entity uid _) = renderDivs (areq hiddenField "" (Just uid))

@@ -1,7 +1,9 @@
-{-# LANGUAGE TupleSections, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
+
 module Handler.Delete where
 
-import Data.Text (Text)
 import Filesystem as FS
 import Filesystem.Path.CurrentOS as FS
 
@@ -9,10 +11,21 @@ import Yesod
 
 import Foundation
 import Model
+import Settings (widgetFile)
 
-postDeleteR :: Text -> Handler RepHtml
-postDeleteR name = do
-    Entity key res <- runDB $ getBy404 (UniqueResource name)
+getDeleteR :: ResourceId -> Handler RepHtml
+getDeleteR rid = do
+    (formWidget, formEncType) <- generateFormPost $ deleteForm rid
+    defaultLayout $ do
+        setTitle $ "H3CWT - Removal confirmation"
+        $(widgetFile "confirmDelete")
+
+postDeleteR :: ResourceId -> Handler RepHtml
+postDeleteR rid = do
+    res <- runDB $ get404 rid
     liftIO . FS.removeFile . FS.fromText . resourceFilename $ res
-    runDB $ delete key
+    runDB $ delete rid
     redirect HomeR
+
+deleteForm :: ResourceId -> Form ResourceId
+deleteForm rid = renderDivs (areq hiddenField "" (Just rid))

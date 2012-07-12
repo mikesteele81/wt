@@ -1,0 +1,5 @@
+<p>
+  Please confirm that you wish to delete this file. Any links which have previously been sent out will be broken.
+<form method=post action=@{DeleteR rid} enctype=#{formEncType}>
+   ^{formWidget}
+   <input type="submit" value="Delete">

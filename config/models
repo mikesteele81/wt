@@ -19,9 +19,9 @@ FacebookAuth
     UniqueFacebookAuth fbId
     UniqueFacebookAuthEmail email
 Resource
-    filename     Text
-    friendlyname Text Maybe
-    contentType  Text
+    filename       Text
+    friendlyname   Text Maybe
+    contentType    Text
     UniqueResource filename
 
  -- By default this file is used in Model.hs (which is imported by Foundation.hs)

@@ -1,0 +1,13 @@
+$doctype 5
+<html>
+  <head>
+  <body>
+    <p>
+      Greetings, #{userDisplayName user}, from the #
+      <a href=@{HomeR}>HCCC's WT web service
+      \ ,
+    <p>
+      #{userDisplayName publisher} added a new file for you to download.
+    <h3>
+      <a href=@{DownloadR $ resourceFilename resource}>
+        #{resourceDisplayName resource}

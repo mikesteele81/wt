@@ -21,10 +21,11 @@ getUserR uid = do
     auths <- runDB $ catMaybes <$> sequence
         [ ifFound ("Google" :: Text) <$> getBy (UniqueGoogleAuth    email)
         , ifFound "BrowserID"        <$> getBy (UniqueBrowserIdAuth email)
+        , ifFound "Facebook"         <$> getBy (UniqueFacebookAuthEmail  email)
         ]
     (formWidget, formEnctype) <- generateFormPost . updateForm $ user
     defaultLayout $ do
-        setTitle . toHtml $ "H3CWT - " `T.append` friendlyName user
+        setTitle . toHtml $ "H3CWT - " `T.append` userDisplayName user
         $(widgetFile "user")
   where
     ifFound x f = maybe Nothing (const $ Just x) f
@@ -36,7 +37,7 @@ postUserR uid = do
     case result of
       FormSuccess (mfn, mln) -> do
         runDB $ update uid [UserFirstName =. mfn, UserLastName =. mln]
-        setMessage . toHtml $ friendlyName user `T.append` " has been updated."
+        setMessage . toHtml $ userDisplayName user `T.append` " has been updated."
       -- I don't know what these errors look like
       FormFailure ex -> setMessage . toHtml $ T.intercalate ", " ex
       _ -> return ()

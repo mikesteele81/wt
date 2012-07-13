@@ -4,12 +4,13 @@
 /favicon.ico FaviconR GET
 /robots.txt  RobotsR  GET
 
-/                         HomeR             GET
-/resources                ResourcesR        GET POST
-/resources/#ResourceId    ResourceR         GET POST
-/resources/download/#Text ResourceDownloadR GET
-/delete/#ResourceId       DeleteR           GET POST
-/changes                  ChangesR          GET
-/users                    UsersR            GET POST
-/users/#UserId            UserR             GET POST
-/users/#UserId/confirm    ConfirmR          POST
+/                                HomeR        GET
+/changes                         ChangesR     GET
+/download/#Text                  DownloadR    GET
+/shared                          ResourcesR   GET POST
+/shared/#ResourceId              ResourceR    GET POST
+/shared/#ResourceId/delete       DeleteR      GET POST
+/shared/#ResourceId/publications PublicationsR    POST
+/users                           UsersR       GET POST
+/users/#UserId                   UserR        GET POST
+/users/#UserId/confirm           ConfirmR         POST

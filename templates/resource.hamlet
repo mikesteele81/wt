@@ -1,10 +1,14 @@
-<h1>#{friendlyName}
+<h1>#{resourceDisplayName res}
 <div #form>
   <form method=post action=@{ResourceR rid}#form enctype=#{formEncType}>
     ^{formWidget}
     <input type="submit" value="save changes">
 <ul>
   <li>
-    <a href=@{ResourceDownloadR $ resourceFilename res}>download
+    <a href=@{DownloadR $ resourceFilename res}>download
   <li>
     <a href=@{DeleteR rid}>delete
+  <li>
+    <form method=post action=@{PublicationsR rid} enctype=#{snd publishForm}>
+      ^{fst publishForm}
+      <input type="submit" value="publish">

@@ -4,14 +4,13 @@
 module Handler.Users where
 
 import Control.Applicative
+import Control.Exception (try)
 import Control.Monad (when)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding as E
-import qualified Data.Text.Lazy as L
-import Data.Text.Lazy.Encoding as LE
 
-import Network.HTTP.Conduit (withManager)
+import Network.HTTP.Conduit (withManager, HttpException (..))
 import Network.Mail.Mime
 import Network.Mail.Mime.SES
 import Text.Blaze.Html.Renderer.Utf8
@@ -45,13 +44,13 @@ postUsersR = do
         mexistingUser <- runDB $ getBy $ UniqueUser (userPrimaryEmail newUser)
         case mexistingUser of
           Just (Entity _ existingUser) ->
-            setMessage . toHtml $ friendlyName existingUser `T.append` " already exists."
+            setMessage . toHtml $ userDisplayName existingUser `T.append` " already exists."
           Nothing -> do
             _ <- runDB $ insert newUser
             when notify $ do
                 render <- getUrlRenderParams
-                liftIO $ sendWelcomeMail thisUser render newUser
-            setMessage . toHtml $ friendlyName newUser `T.append` " was added."
+                liftIO $ sendWelcomeMail thisUser render newUser >> return ()
+            setMessage . toHtml $ userDisplayName newUser `T.append` " was added."
       FormFailure ex -> setMessage . toHtml . T.intercalate "\n" $ ex
       FormMissing -> return ()
     redirect UsersR
@@ -67,9 +66,10 @@ addUserForm = renderDivs $ (,)
     <*> ( maybe False id <$>
           aopt checkBoxField "Send notification email message" (Just $ Just True))
 
-sendWelcomeMail :: User -> (Route App -> [(Text, Text)] -> Text) -> User -> IO ()
-sendWelcomeMail addingUser render user = withManager $ \manager -> do
-    renderSendMailSES manager ses mail
+sendWelcomeMail :: User -> (Route App -> [(Text, Text)] -> Text) -> User -> IO Bool
+sendWelcomeMail addingUser render user = do
+    eres <- try (withManager $ \manager -> renderSendMailSES manager ses mail)
+    return $ either (const False) (const True) (eres :: Either HttpException ())
   where
     ses = SES { sesFrom      = E.encodeUtf8 Settings.sesFromAddress
               , sesTo        = [E.encodeUtf8 toAddress]

@@ -3,6 +3,6 @@ $maybe Entity uid user <- mauth
     <div #message>#{msg}
   <a href=@{HomeR}>Home #
   <a href=@{UserR uid}>
-    #{friendlyName user} #
+    #{userDisplayName user} #
   <a href=@{AuthR LogoutR}>logout
 ^{widget}

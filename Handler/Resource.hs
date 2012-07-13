@@ -5,7 +5,6 @@ module Handler.Resource where
 
 import Control.Applicative
 import Control.Monad (when)
-import Data.Text (Text)
 import qualified Data.Text as T
 
 import Filesystem
@@ -19,8 +18,8 @@ import Settings (widgetFile)
 getResourceR :: ResourceId -> Handler RepHtml
 getResourceR rid = do
     res  <- runDB $ get404 rid
-    let friendlyName = maybe (resourceFilename res) id $ resourceFriendlyname res
     (formWidget, formEncType) <- generateFormPost . editForm $ res
+    publishForm <- generateFormPost $ renderDivs (areq hiddenField "" (Just rid))
     defaultLayout $ do
         setTitle . toHtml $ "H3CWT - " `T.append` resourceFilename res
         $(widgetFile "resource")
@@ -46,18 +45,6 @@ postResourceR rid = do
       FormFailure ex -> setMessage . toHtml $ T.intercalate ", " ex
       _ -> return ()
     redirect $ ResourceR rid
-
-getResourceDownloadR :: Text -> Handler RepM4A
-getResourceDownloadR name = do
-    Entity _ res  <- runDB $ getBy404 $ UniqueResource name
-    sendFile typeM4A $ T.unpack . resourceFilename $ res
-
-newtype RepM4A = RepM4A Content
-instance HasReps RepM4A where
-    chooseRep (RepM4A c) _ = return (typeM4A, c)
-
-typeM4A :: ContentType
-typeM4A = "audio/mp4"
 
 editForm :: Resource -> Form Resource
 editForm resource = renderDivs $ Resource

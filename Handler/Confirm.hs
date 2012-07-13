@@ -14,9 +14,9 @@ postConfirmR uid = do
     if userConfirmed user
       then
         setMessage . toHtml
-        $ T.concat [friendlyName user, " already has access."]
+        $ T.concat [userDisplayName user, " already has access."]
       else do   
         runDB $ update uid [UserConfirmed =. True]
         setMessage . toHtml
-            $ T.concat [friendlyName user, " has been granted access."]
+            $ T.concat [userDisplayName user, " has been granted access."]
     redirect HomeR

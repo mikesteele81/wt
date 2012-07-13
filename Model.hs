@@ -19,8 +19,12 @@ share [mkPersist sqlSettings, mkMigrate "migrateAll"]
     $(persistFileWith lowerCaseSettings "config/models")
 
 -- |Don't check against DB for now.
-friendlyName :: User -> Text
-friendlyName (User (Just fn) (Just ln) _ _    ) = T.concat [fn, " ", ln]
-friendlyName (User (Just fn) _         _ _    ) = fn
-friendlyName (User _         (Just ln) _ _    ) = ln
-friendlyName (User _         _         _ email) = email
+userDisplayName :: User -> Text
+userDisplayName (User (Just fn) (Just ln) _ _    ) = T.concat [fn, " ", ln]
+userDisplayName (User (Just fn) _         _ _    ) = fn
+userDisplayName (User _         (Just ln) _ _    ) = ln
+userDisplayName (User _         _         _ email) = email
+
+resourceDisplayName :: Resource -> Text
+resourceDisplayName (Resource _ (Just n) _) = n
+resourceDisplayName (Resource n _        _) = n

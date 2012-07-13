@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -9,6 +10,10 @@ module Application
     , makeFoundation
     ) where
 
+import Control.Applicative
+
+import Crypto.Random.AESCtr
+import qualified Data.ByteString.Lazy as BL
 import Database.Persist.GenericSql (runMigration)
 import qualified Database.Persist.Store
 import Network.HTTP.Conduit (newManager, def)
@@ -31,7 +36,9 @@ import Settings.StaticFiles
 import Handler.Changes
 import Handler.Confirm
 import Handler.Delete
+import Handler.Download
 import Handler.Home
+import Handler.Publications
 import Handler.Resource
 import Handler.Resources
 import Handler.User
@@ -65,7 +72,8 @@ makeFoundation conf setLogger = do
               Database.Persist.Store.applyEnv
     p <- Database.Persist.Store.createPoolConfig (dbconf :: Settings.PersistConfig)
     Database.Persist.Store.runPool dbconf (runMigration migrateAll) p
-    return $ App conf setLogger s p manager dbconf
+    (hmacKey, _) <- genRandomBytes <$> makeSystem <*> pure 20
+    return $ App conf setLogger s p manager dbconf (BL.fromChunks [hmacKey])
 
 -- for yesod devel
 getApplicationDev :: IO (Int, Application)

@@ -1,24 +1,27 @@
 $maybe Entity _ _ <- mauth
-  $if null needsConfirmation
-  $else
-    <p>The following users need to be confirmed:
-    <ul>
-      $forall (uid, user, formWidget, formEncType) <- confirmRows
-        <li>
-          #{friendlyName user} #
-          <form method=post action=@{ConfirmR uid}#form enctype=#{formEncType}>
-            ^{formWidget}
-            <input type="submit" value="Confirm">
+  <h3>Resources
   $if null resources
     <p> No resources found
   $else
     <ul>
       $forall Entity rid resource <- resources
         <li>
-          $maybe name <- resourceFriendlyname resource
-            <a href=@{ResourceR rid}>#{name}
-          $nothing
-            <a href=@{ResourceR rid}>#{resourceFilename $ resource}
-  <a href=@{ResourcesR}>Add a resource
+          <a href=@{ResourceR rid}>#{resourceDisplayName resource}
+  <h3>Site Management
+  $if null needsConfirmation
+  $else
+    <p>The following users need to be confirmed:
+    <ul>
+      $forall (uid, user, formWidget, formEncType) <- confirmRows
+        <li>
+          #{userDisplayName user} #
+          <form method=post action=@{ConfirmR uid}#form enctype=#{formEncType}>
+            ^{formWidget}
+            <input type="submit" value="Confirm">
+  <ul>
+    <li>
+      <a href=@{ResourcesR}>Add a resource
+    <li>
+      <a href=@{UsersR}>View users
 $nothing
   <a href=@{AuthR LoginR}>login

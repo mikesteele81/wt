@@ -15,6 +15,7 @@ module Foundation
     ) where
 
 import Control.Applicative ((<$>))
+import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Char8 as S8
 
 import qualified Data.Conduit as C
@@ -57,6 +58,7 @@ data App = App
     , connPool :: Database.Persist.Store.PersistConfigPool Settings.PersistConfig -- ^ Database connection pool.
     , httpManager :: Manager
     , persistConfig :: Settings.PersistConfig
+    , getHmacKey :: BL.ByteString
     }
 
 -- Set up i18n messages. See the message folder.
@@ -378,13 +380,16 @@ data Permission = EditProfile UserId
                 | Other
 
 permissionsRequiredFor :: Route App -> Bool -> [Permission]
-permissionsRequiredFor (UserR uid)      True = [EditProfile uid]
-permissionsRequiredFor (AuthR _)        _    = []
-permissionsRequiredFor ChangesR         _    = []
-permissionsRequiredFor FaviconR         _    = []
-permissionsRequiredFor RobotsR          _    = []
-permissionsRequiredFor (StaticR _)      _    = []
-permissionsRequiredFor _                _    = [Other]
+permissionsRequiredFor (UserR uid)      True  = [EditProfile uid]
+permissionsRequiredFor (AuthR _)        _     = []
+permissionsRequiredFor ChangesR         _     = []
+permissionsRequiredFor FaviconR         _     = []
+permissionsRequiredFor RobotsR          _     = []
+-- agents sometimes hand off URLs to external applications, so we can't rely
+-- on certificates to perform authentication here.
+permissionsRequiredFor (DownloadR _)    False = []
+permissionsRequiredFor (StaticR _)      _     = []
+permissionsRequiredFor _                _     = [Other]
 
 hasPermissionTo :: Entity User -> Permission -> YesodDB sub App AuthResult
 hasPermissionTo (Entity uid  _) (EditProfile uid') = return $

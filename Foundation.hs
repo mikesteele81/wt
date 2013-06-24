@@ -22,29 +22,29 @@ import qualified Data.Conduit as C
 import Data.Text (Text)
 import qualified Data.Text.Encoding as TE
 import qualified Data.Text.Encoding.Error as TEE
-import Database.Persist.GenericSql
-import qualified Database.Persist.Store
+import Database.Persist.Sql
+import qualified Database.Persist
 import qualified Facebook as FB
 import Network.HTTP.Conduit (Manager, withManager)
+import System.Log.FastLogger (Logger)
 import Text.Hamlet (hamletFile)
 import Text.Jasmine (minifym)
-import Web.Authenticate.BrowserId
-import Web.ClientSession (getKey)
 import Yesod
 import Yesod.Auth
 import Yesod.Auth.BrowserId
 import Yesod.Auth.Facebook.ServerSide
+import Yesod.Auth.GoogleEmail
 import qualified Yesod.Auth.Message as Msg
 import Yesod.Default.Config
 import Yesod.Default.Util (addStaticContentExternal)
-import Yesod.Logger (Logger, logMsg, formatLogText)
+import qualified Yesod.Facebook as YF
 import qualified Network.Wai as W
 import Yesod.Static
 
-import GoogleEmail
 import Model
 import qualified Settings
 import Settings (widgetFile, Extra (..))
+import Settings.Development (development)
 import Settings.StaticFiles
 
 -- | The site argument for your application. This can be a good place to
@@ -53,12 +53,12 @@ import Settings.StaticFiles
 --   will have access to the data present here.
 data App = App
     { settings :: AppConfig DefaultEnv Extra
-    , getLogger :: Logger
     , getStatic :: Static -- ^ Settings for static file serving.
-    , connPool :: Database.Persist.Store.PersistConfigPool Settings.PersistConfig -- ^ Database connection pool.
+    , connPool :: Database.Persist.PersistConfigPool Settings.PersistConfig -- ^ Database connection pool.
     , httpManager :: Manager
     , persistConfig :: Settings.PersistConfig
     , getHmacKey :: BL.ByteString
+    , appLogger :: Logger
     }
 
 -- Set up i18n messages. See the message folder.
@@ -85,7 +85,7 @@ mkMessage "App" "messages" "en"
 -- split these actions into two functions and place them in separate files.
 mkYesodData "App" $(parseRoutesFile "config/routes")
 
-type Form x = Html -> MForm App App (FormResult x, Widget)
+type Form x = Html -> MForm (HandlerT App IO) (FormResult x, Widget)
 
 -- Please see the documentation for the Yesod typeclass. There are a number
 -- of settings which can be configured by overriding methods here.
@@ -94,9 +94,9 @@ instance Yesod App where
 
     -- Store session data on the client in encrypted cookies,
     -- default session idle timeout is 120 minutes
-    makeSessionBackend _ = do
-        key <- getKey "config/client_session_key.aes"
-        return . Just $ clientSessionBackend key 120
+    makeSessionBackend _ = fmap Just $ defaultClientSessionBackend
+        (120 * 60) -- 120 minutes
+        "config/client_session_key.aes"
 
     defaultLayout widget = do
         master <- getYesod
@@ -123,7 +123,7 @@ instance Yesod App where
         mauth <- maybeAuth
         runDB $ mauth `isAuthorizedTo` permissionsRequiredFor route isWrite
 
-    maximumContentLength _ _ = 50 * 1024 * 1024 -- 50 MiB
+    maximumContentLength _ _ = Just $ 50 * 1024 * 1024 -- 50 MiB
 
     -- This is done to provide an optimization for serving static files from
     -- a separate domain. Please see the staticRoot setting in Settings.hs
@@ -133,9 +133,6 @@ instance Yesod App where
 
     -- The page to be redirected to when authentication is required.
     authRoute _ = Just $ AuthR LoginR
-
-    messageLogger y loc level msg =
-      formatLogText (getLogger y) loc level msg >>= logMsg (getLogger y)
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows
@@ -147,12 +144,23 @@ instance Yesod App where
     -- loads first
     jsLoader _ = BottomOfBody
 
+    -- What messages should be logged. The following includes all messages when
+    -- in development, and warnings and errors in production.
+    shouldLog _ _source level =
+        development || level == LevelWarn || level == LevelError
+
+    makeLogger = return . appLogger
+
+instance YF.YesodFacebook App where
+    fbCredentials _ = Settings.fbCredentials
+    fbHttpManager site = httpManager site
+
 -- How to run database actions.
 instance YesodPersist App where
-    type YesodPersistBackend App = SqlPersist
+    type YesodPersistBackend App = SqlPersistT
     runDB f = do
         master <- getYesod
-        Database.Persist.Store.runPool
+        Database.Persist.runPool
             (persistConfig master)
             f
             (connPool master)
@@ -259,12 +267,13 @@ instance YesodAuth App where
                     , appGoogleEmailPlugin
                     , appBrowserIdPlugin]
 
-    loginHandler = defaultLayout $ do
-        setTitle "H3CWT - Login"
-        tm <- lift getRouteToMaster
-        master <- lift getYesod
-        let loginWidgets = map (flip apLogin tm) (authPlugins master)
-        $(widgetFile "login")
+    loginHandler = do
+        tm <- getRouteToParent
+        lift $ defaultLayout $ do
+            setTitle "H3CWT - Login"
+            master <- getYesod
+            let loginWidgets = map (flip apLogin tm) (authPlugins master)
+            $(widgetFile "login")
 
     authHttpManager = httpManager
 
@@ -281,7 +290,7 @@ instance RenderMessage App FormMessage where
 -- https://github.com/yesodweb/yesod/wiki/Sending-email
 
 -- | modified from yesod-core's implementation.
-wtErrorHandler :: Yesod y => ErrorResponse -> GHandler sub y ChooseRep
+wtErrorHandler :: Yesod y => ErrorResponse -> HandlerT y IO TypedContent
 wtErrorHandler NotFound = do
     r <- waiRequest
     let path' = TE.decodeUtf8With TEE.lenientDecode $ W.rawPathInfo r
@@ -317,19 +326,21 @@ wtErrorHandler (BadMethod m) =
 <p>Method "#{S8.unpack m}" not supported
 |]
 
-applyLayout' :: Yesod master
+applyLayout' :: Yesod site
              => Html -- ^ title
-             -> HtmlUrl (Route master) -- ^ body
-             -> GHandler sub master ChooseRep
-applyLayout' title body = fmap chooseRep $ defaultLayout $ do
-    setTitle title
-    toWidget body
+             -> HtmlUrl (Route site) -- ^ body
+             -> HandlerT site IO TypedContent
+applyLayout' title body = selectRep $ do
+    provideRep $ defaultLayout $ do
+        setTitle title
+        toWidget body
 
 -- Taken from yesod-auth-fb, and modified so my own logo is displayed.
 appFacebookPlugin :: AuthPlugin App
-appFacebookPlugin = (authFacebook Settings.fbCredentials ["email"])
+appFacebookPlugin = (authFacebook ["email"])
     { apLogin = \tm -> do
-          redirectUrl <- lift (getRedirectUrl tm)
+          ur <- getUrlRender
+          redirectUrl <- handlerToWidget $ getRedirectUrl (ur . tm)
           [whamlet|
 <a href="#{redirectUrl}">
   <img src=@{StaticR img_facebook_logo_png} alt=_{Msg.Facebook}>
@@ -339,18 +350,14 @@ appFacebookPlugin = (authFacebook Settings.fbCredentials ["email"])
     -- Run a Facebook action.
     runFB :: YesodAuth master =>
              FB.FacebookT FB.Auth (C.ResourceT IO) a
-          -> GHandler sub master a
+          -> HandlerT master IO a
     runFB act = do
       manager <- authHttpManager <$> getYesod
       liftIO $ C.runResourceT $ FB.runFacebookT Settings.fbCredentials manager act
-
-    getRedirectUrl :: YesodAuth master =>
-                      (Route Auth -> Route master)
-                   -> GHandler sub master Text
-    getRedirectUrl tm = do
-        render  <- getUrlRender
-        let proceedUrl = render (tm proceedR)
-        runFB $ FB.getUserAccessTokenStep1 proceedUrl ["email"]
+     -- Get the URL in facebook.com where users are redirected to.
+    getRedirectUrl :: YF.YesodFacebook site => (Route Auth -> Text) -> HandlerT site IO Text
+    getRedirectUrl render =
+        YF.runYesodFbT $ FB.getUserAccessTokenStep1 (render proceedR) ["email"]
     proceedR = PluginR "fb" ["proceed"]
 
 -- Taken from yesod-auth, and modified so that my own logo is displayed.
@@ -365,16 +372,7 @@ appGoogleEmailPlugin = authGoogleEmail
 
 -- Taken from yesod-auth, and modified so that my own logo is displayed.
 appBrowserIdPlugin :: AuthPlugin App
-appBrowserIdPlugin = authBrowserId
-    { apLogin = \toMaster -> do
-        addScriptRemote browserIdJs
-        toWidget [hamlet|
-<a href="javascript:navigator.id.getVerifiedEmail(function(a){if(a)document.location='@{toMaster complete}/'+a});">
-  <img src=@{StaticR img_browserid_logo_png} alt="BrowserId">
-|]
-    }
-  where
-    complete = PluginR "browserid" []
+appBrowserIdPlugin = authBrowserId def
 
 data Permission = EditProfile UserId
                 | Other
@@ -391,7 +389,7 @@ permissionsRequiredFor (DownloadR _)    False = []
 permissionsRequiredFor (StaticR _)      _     = []
 permissionsRequiredFor _                _     = [Other]
 
-hasPermissionTo :: Entity User -> Permission -> YesodDB sub App AuthResult
+hasPermissionTo :: Entity User -> Permission -> YesodDB App AuthResult
 hasPermissionTo (Entity uid  _) (EditProfile uid') = return $
     if uid == uid'
     then Authorized
@@ -402,7 +400,7 @@ hasPermissionTo (Entity _ user) Other = return $
     else Unauthorized "Sorry, but I'm waiting for an existing member to confirm your access. Once this has been done you will be able to use the service. Please try again later."
 
 isAuthorizedTo :: Maybe (Entity User) -> [Permission]
-    -> YesodDB sub App AuthResult
+    -> YesodDB App AuthResult
 isAuthorizedTo _        []     = return Authorized
 isAuthorizedTo Nothing  _      = return AuthenticationRequired
 isAuthorizedTo (Just u) (p:ps) = do

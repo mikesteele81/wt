@@ -7,11 +7,13 @@ import Control.Applicative
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy as BL
 import Data.Text (Text)
+import qualified Data.Text as Text
 
 import Filesystem as FP
 import Filesystem.Path.CurrentOS as FP
 
 import Yesod
+import Yesod.Core.Types (FileInfo (..))
 
 import Foundation
 import Model
@@ -39,6 +41,6 @@ uploadForm = renderDivs $ (,)
     <*> aopt textField "friendly name" Nothing
 
 saveFile :: (FileInfo, Maybe Text) -> Handler ()
-saveFile (FileInfo name contentType content, friendly) = runDB $ do
+saveFile (FileInfo name contentType _ move, friendly) = runDB $ do
     _ <- insert $ Resource name friendly contentType
-    liftIO $ FP.writeFile (FP.fromText name) $ BS.pack . BL.unpack $ content
+    liftIO $ move (Text.unpack name)

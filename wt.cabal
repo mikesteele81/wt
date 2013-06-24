@@ -28,7 +28,6 @@ library
                      Settings
                      Settings.StaticFiles
                      Settings.Development
-                     GoogleEmail
                      Handler.Changes
                      Handler.Confirm
                      Handler.Delete
@@ -54,7 +53,9 @@ library
                  -- Generate hmac key for file downloads.
                  , cprng-aes
                  , conduit
+                 , data-default
                  , directory
+                 , fast-logger
                  , fb
                  , hamlet
                  , hjsmin
@@ -65,8 +66,10 @@ library
                  -- Use Amazon Web Serveses SES to send email.
                  , mime-mail-ses
                  , monad-control
+                 , monad-logger
                  , persistent
                  , persistent-sqlite
+                 , persistent-template
                  -- Generate hmac key for file downloads.
                  , SHA
                  , shakespeare-css
@@ -87,6 +90,7 @@ library
                  , yesod-auth-fb
                  , yesod-core
                  , yesod-default
+                 , yesod-fb
                  , yesod-form
                  , yesod-static
                  , yesod-test
@@ -100,7 +104,7 @@ executable         wt
     hs-source-dirs:    dist
     build-depends:     base >= 4.5
                      , wt
-                     , yesod-default
+                     , yesod
     ghc-options:       -threaded -O2
 
 test-suite test

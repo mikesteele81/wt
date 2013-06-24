@@ -4,6 +4,7 @@ User
     confirmed    Bool
     primaryEmail Text
     UniqueUser primaryEmail
+    deriving Typeable
 BrowserIdAuth
     email Text
     user  UserId
